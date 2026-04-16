@@ -1,0 +1,42 @@
+name: CI/CD Docker Image
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+
+    - name: Checkout del repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Build con Maven
+      run: mvn clean package -DskipTests=false
+
+    - name: Login en GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Construir imagen Docker
+      run: |
+        docker build -t ghcr.io/${{ github.repository }}:latest .
+
+    - name: Subir imagen a GHCR
+      run: |
+        docker push ghcr.io/${{ github.repository }}:latest
